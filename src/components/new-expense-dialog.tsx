@@ -297,6 +297,9 @@ export function NewExpenseDialog({ users, currentUserId }: Props) {
 							name="paidByUserId"
 							render={({ field }) => (
 								<Select
+									items={Object.fromEntries(
+										users.map((u) => [u.id, u.name]),
+									)}
 									value={field.value}
 									onValueChange={(value) =>
 										field.onChange(value as string)
