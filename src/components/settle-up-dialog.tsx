@@ -62,10 +62,17 @@ type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	users: UserSummary[];
+	groupId: string;
 	prefill?: SettleUpPrefill;
 };
 
-export function SettleUpDialog({ open, onOpenChange, users, prefill }: Props) {
+export function SettleUpDialog({
+	open,
+	onOpenChange,
+	users,
+	groupId,
+	prefill,
+}: Props) {
 	const router = useRouter();
 
 	const {
@@ -103,6 +110,7 @@ export function SettleUpDialog({ open, onOpenChange, users, prefill }: Props) {
 		}
 
 		const result = await createSettlementAction({
+			groupId,
 			fromUserId: values.fromUserId,
 			toUserId: values.toUserId,
 			amountCents,

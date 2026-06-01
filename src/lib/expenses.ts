@@ -37,15 +37,7 @@ export type Balance = {
 	amountCents: number;
 };
 
-export async function listUsers(): Promise<UserSummary[]> {
-	const rows = await db
-		.select({ id: user.id, name: user.name, email: user.email })
-		.from(user)
-		.orderBy(user.name);
-	return rows;
-}
-
-export async function listExpenses(): Promise<ExpenseRow[]> {
+export async function listExpenses(groupId: string): Promise<ExpenseRow[]> {
 	const expenseRows = await db
 		.select({
 			id: expense.id,
@@ -58,7 +50,7 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
 		})
 		.from(expense)
 		.innerJoin(user, eq(user.id, expense.paidByUserId))
-		.where(eq(expense.kind, "expense"))
+		.where(and(eq(expense.kind, "expense"), eq(expense.groupId, groupId)))
 		.orderBy(desc(expense.createdAt));
 
 	if (expenseRows.length === 0) return [];
@@ -74,7 +66,7 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
 		.from(expenseSplit)
 		.innerJoin(user, eq(user.id, expenseSplit.userId))
 		.innerJoin(expense, eq(expense.id, expenseSplit.expenseId))
-		.where(eq(expense.kind, "expense"));
+		.where(and(eq(expense.kind, "expense"), eq(expense.groupId, groupId)));
 
 	const splitsByExpense = new Map<string, ExpenseSplitRow[]>();
 	for (const row of splitRows) {
@@ -106,7 +98,9 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
  * List settlements (kind === "settlement"). Each settlement is an expense
  * with a single split row: the payer paid the recipient (split row's user).
  */
-export async function listSettlements(): Promise<SettlementRow[]> {
+export async function listSettlements(
+	groupId: string,
+): Promise<SettlementRow[]> {
 	const fromUser = alias(user, "from_user");
 	const toUser = alias(user, "to_user");
 
@@ -126,7 +120,9 @@ export async function listSettlements(): Promise<SettlementRow[]> {
 		.innerJoin(fromUser, eq(fromUser.id, expense.paidByUserId))
 		.innerJoin(expenseSplit, eq(expenseSplit.expenseId, expense.id))
 		.innerJoin(toUser, eq(toUser.id, expenseSplit.userId))
-		.where(eq(expense.kind, "settlement"))
+		.where(
+			and(eq(expense.kind, "settlement"), eq(expense.groupId, groupId)),
+		)
 		.orderBy(desc(expense.createdAt));
 
 	return rows.map((row) => ({
@@ -139,12 +135,12 @@ export async function listSettlements(): Promise<SettlementRow[]> {
 }
 
 /**
- * Compute net pairwise debts. For every (creditor, debtor) pair we sum the
- * debtor's split amounts across all expenses the creditor paid, then net
- * against the reverse direction so each pair shows up at most once in the
- * positive-owing direction.
+ * Compute net pairwise debts within a single group. For every (creditor,
+ * debtor) pair we sum the debtor's split amounts across all expenses the
+ * creditor paid in this group, then net against the reverse direction so
+ * each pair shows up at most once in the positive-owing direction.
  */
-export async function computeBalances(): Promise<Balance[]> {
+export async function computeBalances(groupId: string): Promise<Balance[]> {
 	const rows = await db
 		.select({
 			creditorId: expense.paidByUserId,
@@ -156,7 +152,12 @@ export async function computeBalances(): Promise<Balance[]> {
 		.from(expenseSplit)
 		.innerJoin(expense, eq(expense.id, expenseSplit.expenseId))
 		.innerJoin(user, eq(user.id, expense.paidByUserId))
-		.where(and(ne(expenseSplit.userId, expense.paidByUserId)))
+		.where(
+			and(
+				ne(expenseSplit.userId, expense.paidByUserId),
+				eq(expense.groupId, groupId),
+			),
+		)
 		.groupBy(expense.paidByUserId, expenseSplit.userId);
 
 	// We need names for the debtors too. Pull every referenced user in one go.

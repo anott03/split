@@ -7,6 +7,7 @@ export const splitInputSchema = z.object({
 
 export const createExpenseInputSchema = z
 	.object({
+		groupId: z.string().min(1, "Missing group"),
 		description: z.string().trim().min(1, "Description is required").max(200),
 		amountCents: z
 			.number()
@@ -31,6 +32,7 @@ export type CreateExpenseInput = z.infer<typeof createExpenseInputSchema>;
 
 export const createSettlementInputSchema = z
 	.object({
+		groupId: z.string().min(1, "Missing group"),
 		fromUserId: z.string().min(1, "Select who is paying"),
 		toUserId: z.string().min(1, "Select who is being paid"),
 		amountCents: z

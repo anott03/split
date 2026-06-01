@@ -15,9 +15,10 @@ import {
 type Props = {
 	balances: Balance[];
 	users: UserSummary[];
+	groupId: string;
 };
 
-export function BalancesPanel({ balances, users }: Props) {
+export function BalancesPanel({ balances, users, groupId }: Props) {
 	const [open, setOpen] = useState(false);
 	const [prefill, setPrefill] = useState<SettleUpPrefill | undefined>(
 		undefined,
@@ -89,6 +90,7 @@ export function BalancesPanel({ balances, users }: Props) {
 				open={open}
 				onOpenChange={setOpen}
 				users={users}
+				groupId={groupId}
 				prefill={prefill}
 			/>
 		</>

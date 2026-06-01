@@ -65,11 +65,56 @@ export const verification = sqliteTable("verification", {
 	),
 });
 
+// Groups: a named container for expenses, settlements, and the membership
+// roster that scopes who can be selected as a payer/participant. Stored as
+// `app_group` because GROUP is a SQL reserved word.
+export const group = sqliteTable("app_group", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	createdByUserId: text("created_by_user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.$defaultFn(() => new Date())
+		.notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.$defaultFn(() => new Date())
+		.notNull(),
+});
+
+export const groupMember = sqliteTable(
+	"group_member",
+	{
+		id: text("id").primaryKey(),
+		groupId: text("group_id")
+			.notNull()
+			.references(() => group.id, { onDelete: "cascade" }),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		joinedAt: integer("joined_at", { mode: "timestamp" })
+			.$defaultFn(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		uniqueIndex("group_member_group_user_unique").on(
+			table.groupId,
+			table.userId,
+		),
+	],
+);
+
+// `groupId` is nullable so a schema push doesn't fail on pre-existing
+// expense rows. Reads always filter by an explicit groupId, so any orphans
+// are simply invisible until manually cleaned up.
 export const expense = sqliteTable("expense", {
 	id: text("id").primaryKey(),
 	kind: text("kind", { enum: ["expense", "settlement"] })
 		.$defaultFn(() => "expense")
 		.notNull(),
+	groupId: text("group_id").references(() => group.id, {
+		onDelete: "cascade",
+	}),
 	description: text("description").notNull(),
 	amountCents: integer("amount_cents").notNull(),
 	paidByUserId: text("paid_by_user_id")
@@ -106,12 +151,37 @@ export const expenseSplit = sqliteTable(
 export const userRelations = relations(user, ({ many }) => ({
 	expensesPaid: many(expense),
 	splits: many(expenseSplit),
+	memberships: many(groupMember),
+}));
+
+export const groupRelations = relations(group, ({ one, many }) => ({
+	createdBy: one(user, {
+		fields: [group.createdByUserId],
+		references: [user.id],
+	}),
+	members: many(groupMember),
+	expenses: many(expense),
+}));
+
+export const groupMemberRelations = relations(groupMember, ({ one }) => ({
+	group: one(group, {
+		fields: [groupMember.groupId],
+		references: [group.id],
+	}),
+	user: one(user, {
+		fields: [groupMember.userId],
+		references: [user.id],
+	}),
 }));
 
 export const expenseRelations = relations(expense, ({ one, many }) => ({
 	paidBy: one(user, {
 		fields: [expense.paidByUserId],
 		references: [user.id],
+	}),
+	group: one(group, {
+		fields: [expense.groupId],
+		references: [group.id],
 	}),
 	splits: many(expenseSplit),
 }));

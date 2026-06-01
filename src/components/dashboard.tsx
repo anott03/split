@@ -4,15 +4,22 @@ import type {
 	SettlementRow,
 	UserSummary,
 } from "@/lib/expenses";
+import type { GroupSummary } from "@/lib/groups";
 import { BalancesPanel } from "@/components/balances-panel";
+import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { ExpenseTable } from "@/components/expense-table";
+import { GroupSwitcher } from "@/components/group-switcher";
+import { ManageMembersDialog } from "@/components/manage-members-dialog";
 import { NewExpenseDialog } from "@/components/new-expense-dialog";
 import { SettlementsList } from "@/components/settlements-list";
 import { SignOutButton } from "@/components/sign-out-button";
 
 type Props = {
 	currentUser: UserSummary;
-	users: UserSummary[];
+	allUsers: UserSummary[];
+	groups: GroupSummary[];
+	activeGroup: GroupSummary;
+	groupMembers: UserSummary[];
 	expenses: ExpenseRow[];
 	balances: Balance[];
 	settlements: SettlementRow[];
@@ -20,7 +27,10 @@ type Props = {
 
 export function Dashboard({
 	currentUser,
-	users,
+	allUsers,
+	groups,
+	activeGroup,
+	groupMembers,
 	expenses,
 	balances,
 	settlements,
@@ -40,7 +50,27 @@ export function Dashboard({
 					</div>
 				</header>
 
-				<BalancesPanel balances={balances} users={users} />
+				<div className="flex flex-wrap items-center gap-2">
+					<GroupSwitcher
+						groups={groups}
+						activeGroupId={activeGroup.id}
+					/>
+					<ManageMembersDialog
+						group={activeGroup}
+						members={groupMembers}
+						allUsers={allUsers}
+					/>
+					<CreateGroupDialog
+						allUsers={allUsers}
+						currentUserId={currentUser.id}
+					/>
+				</div>
+
+				<BalancesPanel
+					balances={balances}
+					users={groupMembers}
+					groupId={activeGroup.id}
+				/>
 
 				<SettlementsList settlements={settlements} />
 
@@ -48,7 +78,11 @@ export function Dashboard({
 					<h2 className="text-sm uppercase tracking-widest text-stone-700">
 						expenses
 					</h2>
-					<NewExpenseDialog users={users} currentUserId={currentUser.id} />
+					<NewExpenseDialog
+						users={groupMembers}
+						currentUserId={currentUser.id}
+						groupId={activeGroup.id}
+					/>
 				</div>
 
 				<ExpenseTable expenses={expenses} />

@@ -96,9 +96,10 @@ type FormValues = z.infer<typeof formSchema>;
 type Props = {
 	users: UserSummary[];
 	currentUserId: string;
+	groupId: string;
 };
 
-export function NewExpenseDialog({ users, currentUserId }: Props) {
+export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
 
@@ -209,6 +210,7 @@ export function NewExpenseDialog({ users, currentUserId }: Props) {
 					}));
 
 		const result = await createExpenseAction({
+			groupId,
 			description: values.description,
 			amountCents,
 			paidByUserId: values.paidByUserId,
