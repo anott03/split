@@ -1,4 +1,5 @@
 import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/lib/db";
 import { expense, expenseSplit, user } from "@/lib/schema";
 
@@ -20,6 +21,14 @@ export type ExpenseRow = {
 	createdAt: Date;
 	paidBy: UserSummary;
 	splits: ExpenseSplitRow[];
+};
+
+export type SettlementRow = {
+	id: string;
+	amountCents: number;
+	createdAt: Date;
+	from: UserSummary;
+	to: UserSummary;
 };
 
 export type Balance = {
@@ -49,6 +58,7 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
 		})
 		.from(expense)
 		.innerJoin(user, eq(user.id, expense.paidByUserId))
+		.where(eq(expense.kind, "expense"))
 		.orderBy(desc(expense.createdAt));
 
 	if (expenseRows.length === 0) return [];
@@ -62,7 +72,9 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
 			userEmail: user.email,
 		})
 		.from(expenseSplit)
-		.innerJoin(user, eq(user.id, expenseSplit.userId));
+		.innerJoin(user, eq(user.id, expenseSplit.userId))
+		.innerJoin(expense, eq(expense.id, expenseSplit.expenseId))
+		.where(eq(expense.kind, "expense"));
 
 	const splitsByExpense = new Map<string, ExpenseSplitRow[]>();
 	for (const row of splitRows) {
@@ -87,6 +99,42 @@ export async function listExpenses(): Promise<ExpenseRow[]> {
 		splits: (splitsByExpense.get(row.id) ?? []).sort((a, b) =>
 			a.user.name.localeCompare(b.user.name),
 		),
+	}));
+}
+
+/**
+ * List settlements (kind === "settlement"). Each settlement is an expense
+ * with a single split row: the payer paid the recipient (split row's user).
+ */
+export async function listSettlements(): Promise<SettlementRow[]> {
+	const fromUser = alias(user, "from_user");
+	const toUser = alias(user, "to_user");
+
+	const rows = await db
+		.select({
+			id: expense.id,
+			amountCents: expense.amountCents,
+			createdAt: expense.createdAt,
+			fromId: fromUser.id,
+			fromName: fromUser.name,
+			fromEmail: fromUser.email,
+			toId: toUser.id,
+			toName: toUser.name,
+			toEmail: toUser.email,
+		})
+		.from(expense)
+		.innerJoin(fromUser, eq(fromUser.id, expense.paidByUserId))
+		.innerJoin(expenseSplit, eq(expenseSplit.expenseId, expense.id))
+		.innerJoin(toUser, eq(toUser.id, expenseSplit.userId))
+		.where(eq(expense.kind, "settlement"))
+		.orderBy(desc(expense.createdAt));
+
+	return rows.map((row) => ({
+		id: row.id,
+		amountCents: row.amountCents,
+		createdAt: row.createdAt,
+		from: { id: row.fromId, name: row.fromName, email: row.fromEmail },
+		to: { id: row.toId, name: row.toName, email: row.toEmail },
 	}));
 }
 

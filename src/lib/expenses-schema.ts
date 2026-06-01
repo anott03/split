@@ -28,3 +28,19 @@ export const createExpenseInputSchema = z
 	);
 
 export type CreateExpenseInput = z.infer<typeof createExpenseInputSchema>;
+
+export const createSettlementInputSchema = z
+	.object({
+		fromUserId: z.string().min(1, "Select who is paying"),
+		toUserId: z.string().min(1, "Select who is being paid"),
+		amountCents: z
+			.number()
+			.int("Amount must be a whole number of cents")
+			.positive("Amount must be greater than zero"),
+	})
+	.refine((v) => v.fromUserId !== v.toUserId, {
+		message: "From and to must be different users",
+		path: ["toUserId"],
+	});
+
+export type CreateSettlementInput = z.infer<typeof createSettlementInputSchema>;

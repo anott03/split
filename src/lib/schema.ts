@@ -67,6 +67,9 @@ export const verification = sqliteTable("verification", {
 
 export const expense = sqliteTable("expense", {
 	id: text("id").primaryKey(),
+	kind: text("kind", { enum: ["expense", "settlement"] })
+		.$defaultFn(() => "expense")
+		.notNull(),
 	description: text("description").notNull(),
 	amountCents: integer("amount_cents").notNull(),
 	paidByUserId: text("paid_by_user_id")

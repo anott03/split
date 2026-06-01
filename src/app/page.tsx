@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import {
 	computeBalances,
 	listExpenses,
+	listSettlements,
 	listUsers,
 	type UserSummary,
 } from "@/lib/expenses";
@@ -15,9 +16,10 @@ export default async function Home() {
 		redirect("/signin");
 	}
 
-	const [users, expenses, balances] = await Promise.all([
+	const [users, expenses, settlements, balances] = await Promise.all([
 		listUsers(),
 		listExpenses(),
+		listSettlements(),
 		computeBalances(),
 	]);
 
@@ -33,6 +35,7 @@ export default async function Home() {
 			users={users}
 			expenses={expenses}
 			balances={balances}
+			settlements={settlements}
 		/>
 	);
 }
