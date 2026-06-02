@@ -10,7 +10,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "split",
 	"main": ".open-next/worker.js",
-	"compatibility_date": "2026-05-31",
+	"compatibility_date": "2026-06-01",
 	"compatibility_flags": [
 		"nodejs_compat",
 		"global_fetch_strictly_public"
@@ -33,7 +33,7 @@
 		}
 	],
 	"observability": {
-		"enabled": true
+		"enabled": false
 	},
 	"upload_source_maps": true,
 	"d1_databases": [
@@ -62,6 +62,23 @@
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
 	"vars": {
-        "BETTER_AUTH_URL": "https://split.twdl.us"
+		"BETTER_AUTH_URL": "https://split.twdl.us"
+	},
+	"routes": [
+		{
+			"pattern": "split.twdl.us",
+			"zone_name": "twdl.us",
+			"custom_domain": true,
+			"enabled": true,
+			"previews_enabled": false
+		}
+	],
+	"workers_dev": false,
+	"preview_urls": false,
+    "observability": {
+        "logs": {
+          "enabled": true,
+          "invocation_logs": true
+        }
     }
 }
