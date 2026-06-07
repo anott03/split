@@ -7,6 +7,7 @@
 		"build": "next build",
 		"start": "next start",
 		"db:push": "drizzle-kit push",
+		"worker:build": "opennextjs-cloudflare build",
 		"lint": "next lint",
 		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
 		"upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
