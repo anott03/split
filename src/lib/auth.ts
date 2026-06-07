@@ -8,11 +8,21 @@ export const auth = betterAuth({
 		provider: "sqlite",
 		schema,
 	}),
-    emailAndPassword: {
-        enabled: true,
-    },
-    trustedOrigins: [
-        "http://localhost:3000",
-        "https://split.twdl.us",
-    ],
+	databaseHooks: {
+		user: {
+			create: {
+				after: async (user) => {
+					if (!user) return;
+					await db
+						.insert(schema.userData)
+						.values({ userId: user.id })
+						.onConflictDoNothing();
+				},
+			},
+		},
+	},
+	emailAndPassword: {
+		enabled: true,
+	},
+	trustedOrigins: ["http://localhost:3000", "https://split.twdl.us"],
 });

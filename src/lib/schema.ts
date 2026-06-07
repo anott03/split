@@ -65,6 +65,15 @@ export const verification = sqliteTable("verification", {
 	),
 });
 
+export const userData = sqliteTable("user_data", {
+	userId: text("user_id")
+		.primaryKey()
+		.references(() => user.id, { onDelete: "cascade" }),
+	isAdmin: integer("is_admin", { mode: "boolean" })
+		.default(false)
+		.notNull(),
+});
+
 // Groups: a named container for expenses, settlements, and the membership
 // roster that scopes who can be selected as a payer/participant. Stored as
 // `app_group` because GROUP is a SQL reserved word.
@@ -148,10 +157,21 @@ export const expenseSplit = sqliteTable(
 	],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
+	data: one(userData, {
+		fields: [user.id],
+		references: [userData.userId],
+	}),
 	expensesPaid: many(expense),
 	splits: many(expenseSplit),
 	memberships: many(groupMember),
+}));
+
+export const userDataRelations = relations(userData, ({ one }) => ({
+	user: one(user, {
+		fields: [userData.userId],
+		references: [user.id],
+	}),
 }));
 
 export const groupRelations = relations(group, ({ one, many }) => ({
