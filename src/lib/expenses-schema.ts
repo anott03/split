@@ -5,6 +5,11 @@ export const splitInputSchema = z.object({
 	amountCents: z.number().int().positive(),
 });
 
+const transactionDateSchema = z.coerce.date().refine(
+	(date) => !Number.isNaN(date.getTime()),
+	"Select a valid transaction date",
+);
+
 export const createExpenseInputSchema = z
 	.object({
 		groupId: z.string().min(1, "Missing group"),
@@ -13,6 +18,7 @@ export const createExpenseInputSchema = z
 			.number()
 			.int("Amount must be a whole number of cents")
 			.positive("Amount must be greater than zero"),
+		transactionDate: transactionDateSchema,
 		paidByUserId: z.string().min(1, "Select who paid"),
 		splits: z.array(splitInputSchema).min(1, "Add at least one participant"),
 	})
@@ -29,6 +35,12 @@ export const createExpenseInputSchema = z
 	);
 
 export type CreateExpenseInput = z.infer<typeof createExpenseInputSchema>;
+
+export const updateExpenseInputSchema = createExpenseInputSchema.extend({
+	id: z.string().min(1, "Missing expense"),
+});
+
+export type UpdateExpenseInput = z.infer<typeof updateExpenseInputSchema>;
 
 export const createSettlementInputSchema = z
 	.object({

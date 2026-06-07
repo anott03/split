@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+	useEffect,
+	useMemo,
+	useState,
+	type ChangeEvent,
+	type ReactElement,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarIcon, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
@@ -22,6 +30,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Select,
@@ -30,13 +43,17 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { createExpenseAction } from "@/lib/expenses-actions";
-import type { UserSummary } from "@/lib/expenses";
+import {
+	createExpenseAction,
+	updateExpenseAction,
+} from "@/lib/expenses-actions";
+import type { ExpenseRow, UserSummary } from "@/lib/expenses";
 import {
 	distributeEqually,
 	formatCents,
 	parseDollarsToCents,
 } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 // Client-side form schema. The participants field is the source of truth
 // for who is included in the split; the manualSplits map carries the
@@ -54,6 +71,11 @@ const formSchema = z
 				},
 				{ message: "Enter a positive dollar amount" },
 			),
+		transactionDate: z
+			.date()
+			.refine((date) => !Number.isNaN(date.getTime()), {
+				message: "Select a valid transaction date",
+			}),
 		paidByUserId: z.string().min(1, "Select who paid"),
 		participantIds: z
 			.array(z.string())
@@ -95,29 +117,136 @@ type FormValues = z.infer<typeof formSchema>;
 
 type Props = {
 	users: UserSummary[];
-	currentUserId: string;
+	currentUserId?: string;
 	groupId: string;
+	expense?: ExpenseRow;
+	trigger: ReactElement;
 };
 
-export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
+function dollarsFromCents(cents: number): string {
+	return (cents / 100).toFixed(2);
+}
+
+function isValidDate(date: Date | undefined): date is Date {
+	return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+function timeInputValue(date: Date | undefined): string {
+	if (!isValidDate(date)) return "";
+	return `${date.getHours().toString().padStart(2, "0")}:${date
+		.getMinutes()
+		.toString()
+		.padStart(2, "0")}`;
+}
+
+function DateTimePicker({
+	value,
+	onChange,
+	invalid,
+}: {
+	value: Date | undefined;
+	onChange: (date: Date) => void;
+	invalid?: boolean;
+}) {
+	const [open, setOpen] = useState(false);
+	const selected = isValidDate(value) ? value : undefined;
+
+	function handleDateSelect(date: Date | undefined) {
+		if (!date) return;
+		const timeSource = selected ?? new Date();
+		const next = new Date(date);
+		next.setHours(timeSource.getHours(), timeSource.getMinutes(), 0, 0);
+		onChange(next);
+		setOpen(false);
+	}
+
+	function handleTimeChange(event: ChangeEvent<HTMLInputElement>) {
+		const [hours, minutes] = event.currentTarget.value.split(":").map(Number);
+		if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return;
+		const next = new Date(selected ?? new Date());
+		next.setHours(hours, minutes, 0, 0);
+		onChange(next);
+	}
+
+	return (
+		<div className="grid gap-2 sm:grid-cols-[1fr_7rem]">
+			<Popover open={open} onOpenChange={setOpen}>
+				<PopoverTrigger
+					render={
+						<Button
+							variant="outline"
+							data-empty={!selected}
+							aria-invalid={invalid}
+							className="w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
+						/>
+					}
+				>
+					<CalendarIcon />
+					{selected ? format(selected, "PPP") : <span>Pick a date</span>}
+				</PopoverTrigger>
+				<PopoverContent align="start" className="w-auto p-0">
+					<Calendar
+						mode="single"
+						selected={selected}
+						onSelect={handleDateSelect}
+					/>
+				</PopoverContent>
+			</Popover>
+			<Input
+				type="time"
+				aria-label="transaction time"
+				aria-invalid={invalid}
+				value={timeInputValue(selected)}
+				onChange={handleTimeChange}
+				className="font-mono"
+			/>
+		</div>
+	);
+}
+
+function ExpenseDialog({
+	users,
+	currentUserId,
+	groupId,
+	expense,
+	trigger,
+}: Props) {
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
+	const isEditing = !!expense;
 
-	const defaultValues = useMemo<FormValues>(
-		() => ({
+	function getDefaultValues(): FormValues {
+		if (expense) {
+			return {
+				description: expense.description,
+				amount: dollarsFromCents(expense.amountCents),
+				transactionDate: new Date(expense.createdAt),
+				paidByUserId: expense.paidBy.id,
+				participantIds: expense.splits.map((split) => split.user.id),
+				mode: "manual",
+				manualSplits: Object.fromEntries(
+					expense.splits.map((split) => [
+						split.user.id,
+						dollarsFromCents(split.amountCents),
+					]),
+				),
+			};
+		}
+
+		return {
 			description: "",
 			amount: "",
-			paidByUserId: currentUserId,
+			transactionDate: new Date(),
+			paidByUserId: currentUserId ?? users[0]?.id ?? "",
 			participantIds: [],
 			mode: "equal",
 			manualSplits: {},
-		}),
-		[currentUserId],
-	);
+		};
+	}
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
-		defaultValues,
+		defaultValues: getDefaultValues(),
 		mode: "onChange",
 	});
 
@@ -136,6 +265,7 @@ export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
 	const manualSplits = useWatch({ control, name: "manualSplits" });
 
 	const totalCents = parseDollarsToCents(amount ?? "") ?? 0;
+	const dialogTitle = isEditing ? "edit expense" : "new expense";
 
 	// Compute equal split for participants (deterministic by sort of user IDs
 	// so the cent remainder lands on the same participant across renders).
@@ -209,45 +339,44 @@ export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
 						amountCents: parseDollarsToCents(values.manualSplits[userId] ?? "") ?? 0,
 					}));
 
-		const result = await createExpenseAction({
+		const payload = {
 			groupId,
 			description: values.description,
 			amountCents,
+			transactionDate: values.transactionDate.toISOString(),
 			paidByUserId: values.paidByUserId,
 			splits,
-		});
+		};
+		const result = isEditing
+			? await updateExpenseAction({ id: expense.id, ...payload })
+			: await createExpenseAction(payload);
 
 		if (!result.ok) {
 			toast.error(result.error);
 			return;
 		}
 
-		toast.success("Expense added");
-		reset(defaultValues);
+		toast.success(isEditing ? "Expense updated" : "Expense added");
+		reset(getDefaultValues());
 		setOpen(false);
 		router.refresh();
 	}
 
 	function handleOpenChange(next: boolean) {
 		setOpen(next);
-		if (!next) reset(defaultValues);
+		reset(getDefaultValues());
 	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger
-				render={
-					<Button size="sm">
-						<Plus />
-						new expense
-					</Button>
-				}
-			/>
+			<DialogTrigger render={trigger} />
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>new expense</DialogTitle>
+					<DialogTitle>{dialogTitle}</DialogTitle>
 					<DialogDescription>
-						Record a shared cost. Payer is independent from participants.
+						{isEditing
+							? "Update the transaction details and split."
+							: "Record a shared cost. Payer is independent from participants."}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -290,6 +419,30 @@ export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
 								{errors.amount.message}
 							</p>
 						) : null}
+					</div>
+
+					<div className="flex flex-col gap-1.5">
+						<Label>transaction date</Label>
+						<Controller
+							control={control}
+							name="transactionDate"
+							render={({ field }) => (
+								<DateTimePicker
+									value={field.value}
+									onChange={field.onChange}
+									invalid={!!errors.transactionDate}
+								/>
+							)}
+						/>
+						{errors.transactionDate ? (
+							<p className="text-xs text-destructive">
+								{errors.transactionDate.message}
+							</p>
+						) : (
+							<p className="text-xs text-muted-foreground">
+								Use this for expenses paid in the past.
+							</p>
+						)}
 					</div>
 
 					<div className="flex flex-col gap-1.5">
@@ -459,11 +612,57 @@ export function NewExpenseDialog({ users, currentUserId, groupId }: Props) {
 							cancel
 						</DialogClose>
 						<Button type="submit" disabled={isSubmitting || !sumMatches}>
-							{isSubmitting ? "saving..." : "add expense"}
+							{isSubmitting
+								? "saving..."
+								: isEditing
+									? "save changes"
+									: "add expense"}
 						</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+export function NewExpenseDialog(props: Omit<Props, "trigger" | "expense">) {
+	return (
+		<ExpenseDialog
+			{...props}
+			trigger={
+				<Button size="sm">
+					<Plus />
+					new expense
+				</Button>
+			}
+		/>
+	);
+}
+
+export function EditExpenseDialog({
+	users,
+	groupId,
+	expense,
+}: {
+	users: UserSummary[];
+	groupId: string;
+	expense: ExpenseRow;
+}) {
+	return (
+		<ExpenseDialog
+			users={users}
+			groupId={groupId}
+			expense={expense}
+			trigger={
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label="edit expense"
+					className={cn("text-muted-foreground hover:text-foreground")}
+				>
+					<Pencil />
+				</Button>
+			}
+		/>
 	);
 }

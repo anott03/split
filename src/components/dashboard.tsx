@@ -85,7 +85,11 @@ export function Dashboard({
 					/>
 				</div>
 
-				<ExpenseTable expenses={expenses} />
+				<ExpenseTable
+					expenses={expenses}
+					users={groupMembers}
+					groupId={activeGroup.id}
+				/>
 			</div>
 		</main>
 	);

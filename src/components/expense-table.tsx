@@ -14,6 +14,7 @@ import { ArrowUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { EditExpenseDialog } from "@/components/new-expense-dialog";
 import {
 	Table,
 	TableBody,
@@ -22,15 +23,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { ExpenseRow } from "@/lib/expenses";
+import type { ExpenseRow, UserSummary } from "@/lib/expenses";
 import { deleteExpenseAction } from "@/lib/expenses-actions";
 import { formatCents, formatRelativeDate } from "@/lib/format";
 
 type Props = {
 	expenses: ExpenseRow[];
+	users: UserSummary[];
+	groupId: string;
 };
 
-export function ExpenseTable({ expenses }: Props) {
+export function ExpenseTable({ expenses, users, groupId }: Props) {
 	const router = useRouter();
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "createdAt", desc: true },
@@ -127,15 +130,22 @@ export function ExpenseTable({ expenses }: Props) {
 			id: "actions",
 			header: () => <span className="sr-only">actions</span>,
 			cell: ({ row }) => (
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					onClick={() => handleDelete(row.original.id)}
-					disabled={pendingDeleteId === row.original.id}
-					aria-label="delete expense"
-				>
-					<Trash2 />
-				</Button>
+				<div className="flex items-center justify-end gap-1">
+					<EditExpenseDialog
+						users={users}
+						groupId={groupId}
+						expense={row.original}
+					/>
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => handleDelete(row.original.id)}
+						disabled={pendingDeleteId === row.original.id}
+						aria-label="delete expense"
+					>
+						<Trash2 />
+					</Button>
+				</div>
 			),
 			enableSorting: false,
 		},
