@@ -24,5 +24,9 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
-	trustedOrigins: ["http://localhost:3000", "https://split.twdl.us"],
+    trustedOrigins: [
+        "http://localhost:3000",
+        "http://localhost:8787",
+        "https://split.twdl.us"
+    ],
 });
