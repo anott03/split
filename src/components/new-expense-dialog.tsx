@@ -198,7 +198,7 @@ function DateTimePicker({
 				aria-invalid={invalid}
 				value={timeInputValue(selected)}
 				onChange={handleTimeChange}
-				className="font-mono"
+				className="w-full font-mono"
 			/>
 		</div>
 	);
