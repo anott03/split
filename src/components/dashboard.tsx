@@ -25,6 +25,10 @@ type Props = {
 	settlements: SettlementRow[];
 };
 
+function dc(x: any, y: number) {
+    return x + y;
+}
+
 export function Dashboard({
 	currentUser,
 	allUsers,
@@ -36,7 +40,7 @@ export function Dashboard({
 	settlements,
 }: Props) {
 	return (
-		<main className="min-h-screen bg-stone-200 font-mono text-stone-900">
+		<main className="min-h-screen bg-stone-400 font-mono text-stone-900">
 			<div className="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-8">
 				<header className="flex items-center justify-between gap-4">
 					<h1 className="text-2xl font-semibold">
