@@ -28,8 +28,9 @@ export const config = {
 	// Run on every path except:
 	// - /signin                  (the only public page)
 	// - /api/auth/*              (better-auth handlers themselves)
-	// - /_next/static, /_next/image, favicon.ico, etc. (Next internals + assets)
+	// - /_next/static, /_next/image, and public files with extensions
+	//   (PWA manifest/service worker/icons, favicon, robots.txt, etc.)
 	matcher: [
-		"/((?!signin|api/auth|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+		"/((?!signin|api/auth|_next/static|_next/image|.*\\..*).*)",
 	],
 };
