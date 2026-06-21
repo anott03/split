@@ -1,5 +1,6 @@
 style_guide_url: https://gist.githubusercontent.com/anott03/b0061b2280cc1587a005c2ccd57fdeef/raw/34b888ee84f6bfde73e7328e9c20b1a1e915aaa9/typescript.md
-model: "@cf/moonshotai/kimi-k2.6"
+# model: "@cf/moonshotai/kimi-k2.6"
+model: "openai/gpt-5.4-nano"
 gateway_id: code-reviewer
 ignore:
   - "**/*.lock"

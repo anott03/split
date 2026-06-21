@@ -1,6 +1,7 @@
 "use server";
 
 import { eq, inArray } from "drizzle-orm";
+import { Effect } from "effect";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -64,7 +65,7 @@ export async function createExpenseAction(
 	const data = parsed.data;
 
 	// Caller must be a member of the target group.
-	if (!(await isGroupMember(session.user.id, data.groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, data.groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
@@ -150,7 +151,7 @@ export async function updateExpenseAction(
 	if (groupId !== data.groupId) {
 		return { ok: false, error: "Expense does not belong to this group" };
 	}
-	if (!(await isGroupMember(session.user.id, groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
@@ -222,7 +223,7 @@ export async function deleteExpenseAction(id: string): Promise<ActionResult> {
 		return { ok: false, error: "Expense not found" };
 	}
 	const groupId = target[0].groupId;
-	if (groupId && !(await isGroupMember(session.user.id, groupId))) {
+	if (groupId && !(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
@@ -250,7 +251,7 @@ export async function createSettlementAction(
 	}
 	const data = parsed.data;
 
-	if (!(await isGroupMember(session.user.id, data.groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, data.groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 

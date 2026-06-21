@@ -15,6 +15,7 @@ import {
 } from "@/lib/groups";
 import { Dashboard } from "@/components/dashboard";
 import { NoGroupEmptyState } from "@/components/no-group-empty-state";
+import { Effect } from "effect";
 
 export default async function Home() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -28,11 +29,16 @@ export default async function Home() {
 		email: session.user.email,
 	};
 
-	const [activeGroup, groups, allUsers] = await Promise.all([
-		resolveActiveGroup(currentUser.id),
-		listUserGroups(currentUser.id),
-		listAllUsers(),
-	]);
+	const { activeGroup, groups, allUsers } = await Effect.runPromise(
+        Effect.gen(function* () {
+            const { groups, allUsers } = yield* Effect.all({
+                groups: listUserGroups(currentUser.id),
+                allUsers: listAllUsers(),
+            }, { concurrency: "unbounded" });
+            const activeGroup = yield* resolveActiveGroup(currentUser.id, groups);
+            return { activeGroup, groups, allUsers };
+        })
+    );
 
 	if (!activeGroup) {
 		return (
@@ -40,12 +46,14 @@ export default async function Home() {
 		);
 	}
 
-	const [groupMembers, expenses, settlements, balances] = await Promise.all([
-		listGroupMembers(activeGroup.id),
-		listExpenses(activeGroup.id),
-		listSettlements(activeGroup.id),
-		computeBalances(activeGroup.id),
-	]);
+	const { groupMembers, expenses, settlements, balances } = await Effect.runPromise(
+        Effect.all({
+            groupMembers: listGroupMembers(activeGroup.id),
+            expenses: listExpenses(activeGroup.id),
+            settlements: listSettlements(activeGroup.id),
+            balances: computeBalances(activeGroup.id),
+        }, { concurrency: "unbounded" })
+	);
 
 	return (
 		<Dashboard
