@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { group, groupMember, user } from "@/lib/schema";
 import type { UserSummary } from "@/lib/expenses";
 
+import { Data, Effect } from "effect";
+
 export const ACTIVE_GROUP_COOKIE = "split.active_group";
 
 export type GroupSummary = {
@@ -11,6 +13,10 @@ export type GroupSummary = {
 	name: string;
 	createdByUserId: string;
 };
+
+export class ListAllUsersError extends Data.TaggedError("ListAllUsersError")<{
+    readonly cause: unknown;
+}> {}
 
 /**
  * List groups the user is a member of, ordered by name.
@@ -71,12 +77,14 @@ export async function listGroupMembers(
 /**
  * List all users in the system. Used to populate "add member" pickers.
  */
-export async function listAllUsers(): Promise<UserSummary[]> {
-	const rows = await db
-		.select({ id: user.id, name: user.name, email: user.email })
-		.from(user)
-		.orderBy(asc(user.name));
-	return rows;
+export function listAllUsers(): Effect.Effect<UserSummary[], ListAllUsersError> {
+    return Effect.tryPromise({
+        try: () => db
+            .select({ id: user.id, name: user.name, email: user.email })
+            .from(user)
+            .orderBy(asc(user.name)),
+        catch: (cause) => new ListAllUsersError({ cause }),
+    });
 }
 
 /**

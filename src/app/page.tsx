@@ -16,6 +16,8 @@ import {
 import { Dashboard } from "@/components/dashboard";
 import { NoGroupEmptyState } from "@/components/no-group-empty-state";
 
+import { Effect } from "effect";
+
 export default async function Home() {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) {
@@ -31,7 +33,7 @@ export default async function Home() {
 	const [activeGroup, groups, allUsers] = await Promise.all([
 		resolveActiveGroup(currentUser.id),
 		listUserGroups(currentUser.id),
-		listAllUsers(),
+		Effect.runPromise(listAllUsers()),
 	]);
 
 	if (!activeGroup) {
