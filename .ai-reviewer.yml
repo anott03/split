@@ -1,6 +1,6 @@
 style_guide_url: https://google.github.io/styleguide/tsguide.html
-# model: "@cf/moonshotai/kimi-k2.6"
-model: "@cf/openai/gpt-oss-120b"
+model: "@cf/moonshotai/kimi-k2.6"
+# model: "@cf/openai/gpt-oss-120b"
 gateway_id: code-reviewer
 ignore:
   - "**/*.lock"

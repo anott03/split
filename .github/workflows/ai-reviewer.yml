@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: anott03/code_reviewer@v0.0.4
+      - uses: anott03/code_reviewer@v0.0.5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
