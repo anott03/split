@@ -113,9 +113,9 @@ export function listAllUsers() {
  * 2. The first group (alphabetical) the user belongs to.
  * 3. null, if the user has no groups.
  */
-export function resolveActiveGroup(userId: string) {
+export function resolveActiveGroup(userId: string, groups?: GroupSummary[]) {
     return Effect.gen(function*() {
-        const userGroups = yield* listUserGroups(userId);
+        const userGroups = groups ? groups : yield* listUserGroups(userId);
         if (userGroups.length === 0) return null;
 
         const cookieStore = yield* Effect.tryPromise({
