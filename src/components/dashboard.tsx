@@ -25,10 +25,6 @@ type Props = {
 	settlements: SettlementRow[];
 };
 
-function dc(x: any, y: number) {
-    return x + y;
-}
-
 export function Dashboard({
 	currentUser,
 	allUsers,
