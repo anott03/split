@@ -31,8 +31,8 @@ export default async function Home() {
 	};
 
 	const [activeGroup, groups, allUsers] = await Promise.all([
-		resolveActiveGroup(currentUser.id),
-		listUserGroups(currentUser.id),
+		Effect.runPromise(resolveActiveGroup(currentUser.id)),
+		Effect.runPromise(listUserGroups(currentUser.id)),
 		Effect.runPromise(listAllUsers()),
 	]);
 
@@ -43,7 +43,7 @@ export default async function Home() {
 	}
 
 	const [groupMembers, expenses, settlements, balances] = await Promise.all([
-		listGroupMembers(activeGroup.id),
+		Effect.runPromise(listGroupMembers(activeGroup.id)),
 		listExpenses(activeGroup.id),
 		listSettlements(activeGroup.id),
 		computeBalances(activeGroup.id),

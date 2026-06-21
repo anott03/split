@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { Effect } from "effect";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -106,7 +107,7 @@ export async function addGroupMemberAction(
 	const { groupId, userId } = parsed.data;
 
 	// Authorization: the caller must already be a member of the group.
-	if (!(await isGroupMember(session.user.id, groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
@@ -121,7 +122,7 @@ export async function addGroupMemberAction(
 	}
 
 	// Idempotent: if already a member, nothing to do.
-	if (await isGroupMember(userId, groupId)) {
+	if (await Effect.runPromise(isGroupMember(userId, groupId))) {
 		return { ok: true };
 	}
 
@@ -152,7 +153,7 @@ export async function removeGroupMemberAction(
 	}
 	const { groupId, userId } = parsed.data;
 
-	if (!(await isGroupMember(session.user.id, groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
@@ -196,7 +197,7 @@ export async function setActiveGroupAction(
 	}
 	const { groupId } = parsed.data;
 
-	if (!(await isGroupMember(session.user.id, groupId))) {
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
 		return { ok: false, error: "You are not a member of this group" };
 	}
 
