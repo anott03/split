@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
 	flexRender,
 	getCoreRowModel,
+	getPaginationRowModel,
 	getSortedRowModel,
 	useReactTable,
 	type ColumnDef,
+	type PaginationState,
 	type SortingState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, Trash2 } from "lucide-react";
@@ -15,6 +17,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { EditExpenseDialog } from "@/components/new-expense-dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -45,6 +54,10 @@ export function ExpenseTable({
 		{ id: "createdAt", desc: true },
 	]);
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
 
 	async function handleDelete(id: string) {
 		setPendingDeleteId(id);
@@ -160,10 +173,12 @@ export function ExpenseTable({
 	const table = useReactTable({
 		data: expenses,
 		columns,
-		state: { sorting },
+		state: { sorting, pagination },
 		onSortingChange: setSorting,
+		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
 	});
 
 	return (
@@ -212,6 +227,64 @@ export function ExpenseTable({
 					)}
 				</TableBody>
 			</Table>
+
+			{table.getPrePaginationRowModel().rows.length > 0 ? (
+				<div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
+					<span className="text-xs text-muted-foreground font-mono">
+						{table.getState().pagination.pageIndex *
+							table.getState().pagination.pageSize +
+							1}
+						–
+						{Math.min(
+							(table.getState().pagination.pageIndex + 1) *
+								table.getState().pagination.pageSize,
+							table.getPrePaginationRowModel().rows.length,
+						)}{" "}
+						of{" "}
+						{table.getPrePaginationRowModel().rows.length}
+					</span>
+					<div className="flex items-center gap-2">
+						<Select
+							value={String(
+								table.getState().pagination.pageSize,
+							)}
+							onValueChange={(value) =>
+								table.setPageSize(Number(value))
+							}
+						>
+							<SelectTrigger className="h-7 w-16 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{[10, 25, 50].map((size) => (
+									<SelectItem
+										key={size}
+										value={String(size)}
+									>
+										{size}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => table.previousPage()}
+							disabled={!table.getCanPreviousPage()}
+						>
+							previous
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => table.nextPage()}
+							disabled={!table.getCanNextPage()}
+						>
+							next
+						</Button>
+					</div>
+				</div>
+			) : null}
 		</div>
 	);
 }
