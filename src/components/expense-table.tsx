@@ -31,9 +31,15 @@ type Props = {
 	expenses: ExpenseRow[];
 	users: UserSummary[];
 	groupId: string;
+	emptyMessage?: string;
 };
 
-export function ExpenseTable({ expenses, users, groupId }: Props) {
+export function ExpenseTable({
+	expenses,
+	users,
+	groupId,
+	emptyMessage,
+}: Props) {
 	const router = useRouter();
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "createdAt", desc: true },
@@ -186,7 +192,8 @@ export function ExpenseTable({ expenses, users, groupId }: Props) {
 								colSpan={columns.length}
 								className="h-24 text-center text-sm text-muted-foreground font-mono"
 							>
-								no expenses yet — add your first one.
+								{emptyMessage ??
+									"no expenses yet — add your first one."}
 							</TableCell>
 						</TableRow>
 					) : (

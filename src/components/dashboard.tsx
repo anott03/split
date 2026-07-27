@@ -7,10 +7,9 @@ import type {
 import type { GroupSummary } from "@/lib/groups";
 import { BalancesPanel } from "@/components/balances-panel";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
-import { ExpenseTable } from "@/components/expense-table";
+import { ExpenseList } from "@/components/expense-list";
 import { GroupSwitcher } from "@/components/group-switcher";
 import { ManageMembersDialog } from "@/components/manage-members-dialog";
-import { NewExpenseDialog } from "@/components/new-expense-dialog";
 import { SettlementsList } from "@/components/settlements-list";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -74,21 +73,11 @@ export function Dashboard({
 
 				<SettlementsList settlements={settlements} />
 
-				<div className="flex items-center justify-between">
-					<h2 className="text-sm uppercase tracking-widest text-stone-700">
-						expenses
-					</h2>
-					<NewExpenseDialog
-						users={groupMembers}
-						currentUserId={currentUser.id}
-						groupId={activeGroup.id}
-					/>
-				</div>
-
-				<ExpenseTable
+				<ExpenseList
 					expenses={expenses}
 					users={groupMembers}
 					groupId={activeGroup.id}
+					currentUserId={currentUser.id}
 				/>
 			</div>
 		</main>
