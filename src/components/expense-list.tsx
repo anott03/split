@@ -79,7 +79,7 @@ export function ExpenseList({
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-sm uppercase tracking-widest text-stone-700">
+				<h2 className="text-sm uppercase tracking-widest text-stone-700 dark:text-stone-300">
 					expenses
 				</h2>
 				<div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export function ExpenseList({
 							<Filter className="size-4" />
 							filter
 							{activeFilters ? (
-								<span className="ml-1 inline-flex size-2 rounded-full bg-stone-900" />
+								<span className="ml-1 inline-flex size-2 rounded-full bg-stone-900 dark:bg-stone-100" />
 							) : null}
 						</PopoverTrigger>
 						<PopoverContent className="w-72" align="end">
