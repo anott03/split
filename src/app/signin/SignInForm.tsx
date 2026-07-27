@@ -49,7 +49,7 @@ export function SignInForm() {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="flex flex-col gap-4 w-full max-w-sm font-mono text-stone-900"
+			className="flex flex-col gap-4 w-full max-w-sm font-mono text-foreground"
 		>
 			{isSignUp ? (
 				<label className="flex flex-col gap-1 text-sm">
@@ -61,7 +61,7 @@ export function SignInForm() {
 						value={name}
 						onChange={(event) => setName(event.target.value)}
 						disabled={isSubmitting}
-						className="border-b border-stone-900 bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
+						className="border-b border-foreground bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
 					/>
 				</label>
 			) : null}
@@ -75,7 +75,7 @@ export function SignInForm() {
 					value={email}
 					onChange={(event) => setEmail(event.target.value)}
 					disabled={isSubmitting}
-					className="border-b border-stone-900 bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
+					className="border-b border-foreground bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
 				/>
 			</label>
 
@@ -89,12 +89,12 @@ export function SignInForm() {
 					value={password}
 					onChange={(event) => setPassword(event.target.value)}
 					disabled={isSubmitting}
-					className="border-b border-stone-900 bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
+					className="border-b border-foreground bg-transparent px-1 py-1 outline-none focus:border-b-2 disabled:opacity-60"
 				/>
 			</label>
 
 			{error ? (
-				<p role="alert" className="text-sm text-red-700">
+				<p role="alert" className="text-sm text-red-700 dark:text-red-400">
 					{error}
 				</p>
 			) : null}
@@ -102,7 +102,7 @@ export function SignInForm() {
 			<button
 				type="submit"
 				disabled={isSubmitting}
-				className="mt-2 self-start border border-stone-900 bg-stone-900 px-4 py-2 text-sm text-stone-100 hover:bg-stone-200 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
+				className="mt-2 self-start border border-foreground bg-foreground px-4 py-2 text-sm text-background hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				{isSubmitting
 					? isSignUp
@@ -117,7 +117,7 @@ export function SignInForm() {
 				type="button"
 				onClick={toggleMode}
 				disabled={isSubmitting}
-				className="self-start text-xs text-stone-700 underline underline-offset-4 hover:text-stone-900 disabled:opacity-60"
+				className="self-start text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
 			>
 				{isSignUp
 					? "have an account? sign in"

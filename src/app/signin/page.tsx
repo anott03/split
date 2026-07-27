@@ -13,8 +13,8 @@ export default async function SignInPage() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-stone-200 font-mono">
-			<div className="flex flex-col w-full h-screen max-w-250 p-5 text-stone-900 border-x border-stone-900">
+		<main className="flex min-h-screen items-center justify-center bg-background font-mono text-foreground">
+			<div className="flex flex-col w-full h-screen max-w-250 p-5 border-x border-border">
 				<h1 className="mb-4 text-2xl font-semibold font-mono">
 					<i>SPLIT.</i>
 				</h1>
