@@ -74,7 +74,22 @@
 		}
 	],
 	"workers_dev": false,
-	"preview_urls": false,
+	"preview_urls": true,
+	"env": {
+		"preview": {
+			"vars": {
+				"BETTER_AUTH_URL": "https://split.twdl.us"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "split-preview",
+					"database_id": "8915adb9-f25c-4fa2-b2be-e9e3cc3af2c7",
+					"remote": true
+				}
+			]
+		}
+	},
     "observability": {
         "logs": {
           "enabled": true,
