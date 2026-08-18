@@ -78,6 +78,15 @@
 	"env": {
 		"preview": {
             "name": "split",
+			"services": [
+				{
+					"binding": "WORKER_SELF_REFERENCE",
+					"service": "split"
+				}
+			],
+			"images": {
+				"binding": "IMAGES"
+			},
 			"d1_databases": [
 				{
 					"binding": "DB",
