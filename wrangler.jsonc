@@ -77,6 +77,7 @@
 	"preview_urls": true,
 	"env": {
 		"preview": {
+            "name": "split",
 			"vars": {
 				"BETTER_AUTH_URL": "https://split.twdl.us"
 			},
