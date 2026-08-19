@@ -159,10 +159,9 @@ export function listSettlements(groupId: string) {
 }
 
 /**
- * Compute net pairwise debts within a single group. For every (creditor,
- * debtor) pair we sum the debtor's split amounts across all expenses the
- * creditor paid in this group, then net against the reverse direction so
- * each pair shows up at most once in the positive-owing direction.
+ * Compute simplified debts within a single group. Aggregate each member's
+ * net position across all expenses and settlements, then greedily match
+ * the largest debtors with the largest creditors.
  */
 export function computeBalances(groupId: string) {
     return Effect.gen(function*() {
@@ -203,38 +202,42 @@ export function computeBalances(groupId: string) {
             for (const u of userRows) userMap.set(u.id, u);
         }
 
-        // gross[creditorId][debtorId] = cents owed to creditor by debtor
-        const gross = new Map<string, Map<string, number>>();
+        // Net position per user, where positive is owed money
+        // and negative is owes money
+        const net = new Map<string, number>();
         for (const row of rows) {
-            const inner = gross.get(row.creditorId) ?? new Map<string, number>();
-            inner.set(row.debtorId, Number(row.totalCents));
-            gross.set(row.creditorId, inner);
+            const total = Number(row.totalCents);
+            net.set(row.creditorId, (net.get(row.creditorId) ?? 0) + total);
+            net.set(row.debtorId, (net.get(row.debtorId) ?? 0) - total);
         }
 
-        // Net each unordered pair. Iterate over sorted (a, b) where a < b once.
-        const seen = new Set<string>();
+        // Repeatedly match the largest debtor with the largest 
+        // creditor, settling min(remaining debt, credit)
+        const debtors = Array.from(net.entries())
+            .filter(([, v]) => v < 0)
+            .sort((a, b) => a[1] - b[1]); // most negative first
+        const creditors = Array.from(net.entries())
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1]); // largest credit first
+
         const balances: Balance[] = [];
-        for (const [creditorId, debtorMap] of gross) {
-            for (const [debtorId, amount] of debtorMap) {
-                const key = [creditorId, debtorId].sort().join("|");
-                if (seen.has(key)) continue;
-                seen.add(key);
+        let i = 0;
+        let j = 0;
+        while (i < debtors.length && j < creditors.length) {
+            const [debtorId, debt] = debtors[i];
+            const [creditorId, credit] = creditors[j];
+            const amount = Math.min(-debt, credit);
 
-                const reverse = gross.get(debtorId)?.get(creditorId) ?? 0;
-                const net = amount - reverse;
-                if (net === 0) continue;
-
-                const [from, to] =
-                    net > 0 ? [debtorId, creditorId] : [creditorId, debtorId];
-                const debtor = userMap.get(from);
-                const creditor = userMap.get(to);
-                if (!debtor || !creditor) continue;
-                balances.push({
-                    creditor,
-                    debtor,
-                    amountCents: Math.abs(net),
-                });
+            const debtor = userMap.get(debtorId);
+            const creditor = userMap.get(creditorId);
+            if (debtor && creditor) {
+                balances.push({ creditor, debtor, amountCents: amount });
             }
+
+            debtors[i][1] = debt + amount;
+            creditors[j][1] = credit - amount;
+            if (debtors[i][1] === 0) i++;
+            if (creditors[j][1] === 0) j++;
         }
 
         return balances.sort((a, b) => b.amountCents - a.amountCents);
