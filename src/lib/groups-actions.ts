@@ -1,13 +1,19 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { Effect } from "effect";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { group, groupMember, user } from "@/lib/schema";
+import {
+	expense,
+	expenseSplit,
+	group,
+	groupMember,
+	user,
+} from "@/lib/schema";
 import { ACTIVE_GROUP_COOKIE, isGroupMember } from "@/lib/groups";
 
 export type ActionResult<T = undefined> =
@@ -174,6 +180,62 @@ export async function removeGroupMemberAction(
 		.where(
 			and(eq(groupMember.groupId, groupId), eq(groupMember.userId, userId)),
 		);
+
+	revalidatePath("/");
+	return { ok: true };
+}
+
+const deleteGroupSchema = z.object({ groupId: z.string().min(1) });
+
+export async function deleteGroupAction(
+	input: unknown,
+): Promise<ActionResult> {
+	let session;
+	try {
+		session = await requireSession();
+	} catch {
+		return { ok: false, error: "Not authenticated" };
+	}
+
+	const parsed = deleteGroupSchema.safeParse(input);
+	if (!parsed.success) {
+		return { ok: false, error: "Invalid input" };
+	}
+	const { groupId } = parsed.data;
+
+	// Authorization: the caller must be a member of the group they are deleting.
+	if (!(await Effect.runPromise(isGroupMember(session.user.id, groupId)))) {
+		return { ok: false, error: "You are not a member of this group" };
+	}
+
+	// Delete dependents explicitly (splits first) rather than relying on
+	// foreign-key cascades being enforced by the D1 database.
+	const expenseRows = await db
+		.select({ id: expense.id })
+		.from(expense)
+		.where(eq(expense.groupId, groupId));
+	const expenseIds = expenseRows.map((r) => r.id);
+
+	const deletes = [
+		...(expenseIds.length > 0
+			? [
+					db
+						.delete(expenseSplit)
+						.where(inArray(expenseSplit.expenseId, expenseIds)),
+					db.delete(expense).where(inArray(expense.id, expenseIds)),
+				]
+			: []),
+		db.delete(groupMember).where(eq(groupMember.groupId, groupId)),
+		db.delete(group).where(eq(group.id, groupId)),
+	];
+	await db.batch(deletes as never);
+
+	// Clear the active-group cookie if it pointed at the deleted group; the
+	// page falls back to the user's remaining groups (or the empty state).
+	const cookieStore = await cookies();
+	if (cookieStore.get(ACTIVE_GROUP_COOKIE)?.value === groupId) {
+		cookieStore.delete(ACTIVE_GROUP_COOKIE);
+	}
 
 	revalidatePath("/");
 	return { ok: true };
