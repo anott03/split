@@ -1,12 +1,29 @@
 name: AI Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      review_run_id:
+        required: true
+        type: string
+      pr_number:
+        required: true
+        type: string
+      base_sha:
+        required: true
+        type: string
+      head_sha:
+        required: true
+        type: string
 
 permissions:
-  pull-requests: write
+  id-token: write
   contents: read
+  pull-requests: read
+
+concurrency:
+  group: ai-reviewer-${{ inputs.pr_number }}
+  cancel-in-progress: true
 
 jobs:
   review:
@@ -14,8 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: anott03/code_reviewer@v0.0.8
+          ref: refs/pull/${{ inputs.pr_number }}/head
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: anott03/code_reviewer@v2-beta
+        with:
+          control-plane-url: https://code-reviewer.amitavnott.workers.dev
+          review-run-id: ${{ inputs.review_run_id }}
+          pr-number: ${{ inputs.pr_number }}
+          base-sha: ${{ inputs.base_sha }}
+          head-sha: ${{ inputs.head_sha }}
         env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_GATEWAY_ID: ${{ secrets.CLOUDFLARE_GATEWAY_ID }}
