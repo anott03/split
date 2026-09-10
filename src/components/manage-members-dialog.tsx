@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, UserMinus, UserPlus } from "lucide-react";
+import { Settings, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
 	addGroupMemberAction,
+	deleteGroupAction,
 	removeGroupMemberAction,
 } from "@/lib/groups-actions";
 import type { GroupSummary } from "@/lib/groups";
@@ -43,6 +44,7 @@ export function ManageMembersDialog({ group, members, allUsers }: Props) {
 	const [open, setOpen] = useState(false);
 	const [selectedToAdd, setSelectedToAdd] = useState<string>("");
 	const [pendingId, setPendingId] = useState<string | null>(null);
+	const [confirmingDelete, setConfirmingDelete] = useState(false);
 
 	const memberIds = new Set(members.map((m) => m.id));
 	const candidates = allUsers.filter((u) => !memberIds.has(u.id));
@@ -76,6 +78,21 @@ export function ManageMembersDialog({ group, members, allUsers }: Props) {
 			return;
 		}
 		toast.success("Member removed");
+		router.refresh();
+	}
+
+	async function handleDeleteGroup() {
+		setPendingId("__group__");
+		const result = await deleteGroupAction({ groupId: group.id });
+		setPendingId(null);
+		if (!result.ok) {
+			toast.error(result.error);
+			setConfirmingDelete(false);
+			return;
+		}
+		toast.success(`Deleted group "${group.name}"`);
+		setConfirmingDelete(false);
+		setOpen(false);
 		router.refresh();
 	}
 
@@ -169,6 +186,49 @@ export function ManageMembersDialog({ group, members, allUsers }: Props) {
 								add
 							</Button>
 						</div>
+					)}
+				</div>
+
+				<Separator />
+
+				<div className="flex flex-col gap-2">
+					<Label>danger zone</Label>
+					{confirmingDelete ? (
+						<div className="flex flex-col gap-2">
+							<p className="text-sm">
+								Delete <strong>{group.name}</strong> and all of its expenses
+								and settlements? This cannot be undone.
+							</p>
+							<div className="flex gap-2">
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={handleDeleteGroup}
+									disabled={pendingId === "__group__"}
+								>
+									<Trash2 />
+									delete group
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setConfirmingDelete(false)}
+									disabled={pendingId === "__group__"}
+								>
+									cancel
+								</Button>
+							</div>
+						</div>
+					) : (
+						<Button
+							variant="outline"
+							size="sm"
+							className="w-fit text-destructive hover:text-destructive"
+							onClick={() => setConfirmingDelete(true)}
+						>
+							<Trash2 />
+							delete this group
+						</Button>
 					)}
 				</div>
 
