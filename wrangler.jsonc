@@ -47,11 +47,8 @@
 	"flagship": [
 		{
 			// Feature flags (https://developers.cloudflare.com/flagship/).
-			// TODO: replace <APP_ID> with the app ID of your Flagship app
-			// (Cloudflare dashboard → Compute → Flagship), then run
-			// `pnpm cf-typegen` to regenerate `cloudflare-env.d.ts`.
 			"binding": "FLAGS",
-			"app_id": "<APP_ID>"
+			"app_id": "f813a4f2-0dc1-43a0-8b7e-b675e116ecc2"
 		}
 	],
 	/**
@@ -103,6 +100,15 @@
 					"database_name": "split-preview",
 					"database_id": "8915adb9-f25c-4fa2-b2be-e9e3cc3af2c7",
 					"remote": true
+				}
+			],
+			"flagship": [
+				{
+					// Feature flags override for the preview environment.
+					// Keep in sync with the top-level `flagship` config — if you
+					// swap in a dedicated Flagship app for preview, update `app_id` here.
+					"binding": "FLAGS",
+					"app_id": "9d30902d-9bb8-4983-8ef7-1bf0259019a3"
 				}
 			]
 		}
