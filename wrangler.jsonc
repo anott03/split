@@ -44,6 +44,16 @@
 			"remote": true
 		}
 	],
+	"flagship": [
+		{
+			// Feature flags (https://developers.cloudflare.com/flagship/).
+			// TODO: replace <APP_ID> with the app ID of your Flagship app
+			// (Cloudflare dashboard → Compute → Flagship), then run
+			// `pnpm cf-typegen` to regenerate `cloudflare-env.d.ts`.
+			"binding": "FLAGS",
+			"app_id": "<APP_ID>"
+		}
+	],
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
