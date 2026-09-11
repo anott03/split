@@ -6,7 +6,13 @@ import { authClient } from "@/lib/auth-client";
 
 type Mode = "signin" | "signup";
 
-export function SignInForm() {
+type SignInFormProps = {
+	/** Whether the `sign-up-enabled` Flagship flag is on. When false, the
+	 *  sign-up UI is hidden; the server still enforces the flag. */
+	signUpEnabled?: boolean;
+};
+
+export function SignInForm({ signUpEnabled = true }: SignInFormProps) {
 	const router = useRouter();
 	const [mode, setMode] = useState<Mode>("signin");
 	const [name, setName] = useState("");
@@ -15,7 +21,7 @@ export function SignInForm() {
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const isSignUp = mode === "signup";
+	const isSignUp = signUpEnabled && mode === "signup";
 
 	function toggleMode() {
 		setMode((prev) => (prev === "signin" ? "signup" : "signin"));
@@ -113,16 +119,18 @@ export function SignInForm() {
 						: "sign in"}
 			</button>
 
-			<button
-				type="button"
-				onClick={toggleMode}
-				disabled={isSubmitting}
-				className="self-start text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
-			>
-				{isSignUp
-					? "have an account? sign in"
-					: "need an account? create one"}
-			</button>
+			{signUpEnabled ? (
+				<button
+					type="button"
+					onClick={toggleMode}
+					disabled={isSubmitting}
+					className="self-start text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
+				>
+					{isSignUp
+						? "have an account? sign in"
+						: "need an account? create one"}
+				</button>
+			) : null}
 		</form>
 	);
 }

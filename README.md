@@ -17,6 +17,7 @@ A single Next.js app deployed entirely on Cloudflare:
 - **Cloudflare Workers** — deployed via [`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare), with a service binding for caching and image optimization.
 - **Cloudflare D1 (SQLite)** — accessed through **Drizzle ORM**. The schema lives in `src/lib/schema.ts`; users, groups, members, expenses, and splits all live in D1. The Drizzle client (`src/lib/db.ts`) lazily proxies the D1 binding, since bindings are only available in request scope on Workers.
 - **Better Auth** — session-based authentication with the Drizzle adapter. Middleware does a fast cookie check at the edge; server components and route handlers re-validate the session for real authorization.
+- **Feature flags** — new account creation is gated behind a Cloudflare Flagship boolean flag (`sign-up-enabled`, `FLAGS` binding in `wrangler.jsonc`). It is enforced in the Better Auth before hook and mirrored in the sign-in UI; see `src/lib/flags.ts`.
 - **Effect** — server-side data access (`src/lib/expenses.ts`, `src/lib/groups.ts`) and mutations (`src/lib/*-actions.ts`) use `Effect` for typed, composable error handling. All mutations validate the session and group membership before touching the database.
 - **Tailwind v4 + shadcn/ui (base-nova)** — component styling, with `lucide-react` icons and `sonner` toasts.
 
